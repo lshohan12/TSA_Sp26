@@ -1,7 +1,7 @@
 ---
 title: "ENV 790.30 - Time Series Analysis for Energy Data | Spring 2025"
 subtitle: "Assignment 2 - Due date 01/27/26"
-author: "Student Name"
+author: "Lauren Shohan"
 output: pdf_document
 geometry: margin=2.54cm
 ---
@@ -20,11 +20,15 @@ When you have completed the assignment, **Knit** the text and code into a single
 
 R packages needed for this assignment:"forecast","tseries", and "dplyr". Install these packages, if you haven't done yet. Do not forget to load them before running your script, since they are NOT default packages.\\
 
-```{r package, message=FALSE}}
+```{r package, message=FALSE}
 #Load/install required package here
 library(forecast)
 library(tseries)
 library(dplyr)
+
+library(lubridate)
+library(ggplot2)
+
 
 ```
 
@@ -41,7 +45,17 @@ getwd()
 #Importing data set
 library(readxl)
 library(openxlsx)
-energydata_main <- read_excel(path="/home/guest/TSA_Sp26/Data/Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.xlsx")
+
+#extract data
+energydata <- read_excel(path=
+"/home/guest/TSA_Sp26/Data/Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.xlsx",
+skip = 12, sheet="Monthly Data",col_names=FALSE)
+
+#extract columns
+energydata_cols <- read_excel(path=
+"/home/guest/TSA_Sp26/Data/Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.xlsx",
+skip = 10 ,n_max = 1, sheet="Monthly Data",col_names=FALSE) 
+
 
 ```
 
@@ -50,7 +64,14 @@ energydata_main <- read_excel(path="/home/guest/TSA_Sp26/Data/Table_10.1_Renewab
 You will work only with the following columns: Total Biomass Energy Production, Total Renewable Energy Production, Hydroelectric Power Consumption. Create a data frame structure with these three time series only. Use the command head() to verify your data.
 
 ```{r}
-head(energydata_main)
+
+#assign column names to data
+colnames(energydata) <- energydata_cols
+
+#select columns i want - columns 4,5,6
+energydata_3cols <- energydata[,4:6]
+
+head(energydata_3cols)
 
 ```
 
@@ -59,6 +80,9 @@ head(energydata_main)
 Transform your data frame in a time series object and specify the starting point and frequency of the time series using the function ts().
 
 ```{r}
+#starting in 1973 and going monthly, thus freq is 12
+ts_energydata <- ts(energydata_3cols,start=c(1973,1), frequency=12) 
+head(ts_energydata)
 
 ```
 
@@ -67,6 +91,19 @@ Transform your data frame in a time series object and specify the starting point
 Compute mean and standard deviation for these three series.
 
 ```{r}
+biomass_mean <- mean(ts_energydata[,1])
+biomass_sd <- sd(ts_energydata[,1])
+
+renewable_mean <- mean(ts_energydata[,2])
+renewable_sd <- sd(ts_energydata[,2])
+
+hydro_mean <- mean(ts_energydata[,3])
+hydro_sd <- sd(ts_energydata[,3])
+
+cat('Biomass Mean and SD =',biomass_mean, 'and',biomass_sd, '\n')
+cat('Renewable Energy Mean and SD =',renewable_mean, 'and',renewable_sd, '\n')
+cat('Hydroelectric Mean and SD =',hydro_mean, 'and',hydro_sd)
+
 
 ```
 
@@ -75,31 +112,71 @@ Compute mean and standard deviation for these three series.
 Display and interpret the time series plot for each of these variables. Try to make your plot as informative as possible by writing titles, labels, etc. For each plot add a horizontal line at the mean of each series in a different color.
 
 ```{r}
+#biomass
+autoplot(ts_energydata[,1], series = 'Total Biomass Energy Production') +
+  geom_hline(aes(yintercept = biomass_mean, color = 'Mean'), linetype = 'dashed') +
+  xlab("Year") +
+  ylab("Trillion BTU") +
+  labs(color="Energy Category") +
+  ggtitle('Total Biomass Energy Production from U.S. EIA 2025 Data') 
+
 
 ```
+This ts plot of total biomas energy production illustrates an increasing trend over the decades, with a stagnant period between 1990-2000 that varied quite alot between 200-300 trillion bto, but then slowy climbed from 2000 onward all the way up to near 500 trillion. 
 
+```{r}
+#renewable energy
+autoplot(ts_energydata[,2], series = 'Total Renewable Energy Production') +
+  geom_hline(aes(yintercept = renewable_mean, color = 'Mean'), linetype = 'dashed') +
+  xlab("Year") +
+  ylab("Trillion BTU") +
+  labs(color="Energy Category") +
+  ggtitle('Total Renewable Energy Production from U.S. EIA 2025 Data') 
+```
+This graph shows a similar story as the biomass ts graph, a slow steady increase with an odd period between 1990-2000 that caused a slight dip post-2000 but then rapidly increased from around 300 trillion all the way to 800 trillion. This one saw a much sharper increase. 
+
+```{r}
+#hydro
+autoplot(ts_energydata[,3], series = 'Hydroelectric Power Consumption') +
+  geom_hline(aes(yintercept = hydro_mean, color = 'Mean'), linetype = 'dashed') +
+  xlab("Year") +
+  ylab("Trillion BTU") +
+  labs(color="Energy Category") +
+  ggtitle('Total Hydro Power Consumed from U.S. EIA 2025 Data') 
+```
+This ts graph is much different than the other two, the hydroelectric ts graph showcases a steady up and down pattern that looks seasonal. During the period 1990-2000 there is the largest spike up to 120 trillion, but besides that it seems to stay steady beween 50/60 trillion for low points and around 100/110 trillion for high points. 
 
 ## Question 5
 Compute the correlation between these three series. Are they significantly correlated? Explain your answer.
 
 ```{r}
 
+cor(ts_energydata)
+
 ```
 
+This data shows a weak, negative correlation between biomass and hydroelectric with a correlation = -0.134 and a weak, negative correlation between total renewable energy and hydroelectric with a -0.058 correlation. However, it shows a very strong and positive correlation between biomass and total renewable power at 0.965, indicating a strong linear dependence. 
 
 ## Question 6
 Compute the autocorrelation function from lag 1 up to lag 40 for these three variables. What can you say about these plots? Do the three of them have the same behavior?
 
 ```{r}
-
+biomass_acf = Acf(ts_energydata[,1], lag.max = 40, plot = TRUE)
+totalrenew_acf = Acf(ts_energydata[,2], lag.max = 40, plot = TRUE)
+hydro_acf = Acf(ts_energydata[,3], lag.max = 40, plot = TRUE)
 ```
 
+Biomass and total renewable have almost identical ACF graphs, with the biomass one having slightly taller bars, but both following the same general downward trend over a certain amount of lags. This slow decay likely indicates strong persistence or memory of the series.
+However, the ACF graph for hydroelectric is what is to be expected for hydro data and goes up and down, following a seasonal trend of negative lags in what I can assume to be warmer months (less water) and large positive lags during the colder months. However, the negative ACFs are getting more negative with time, while the positive ACFs are decreasing as well.  
 
 ## Question 7
 Compute the partial autocorrelation function from lag 1 to lag 40 for these three variables. How these plots differ from the ones in Q6?
 
 ```{r}
+biomass_pacf = Pacf(ts_energydata[,1], lag.max = 40, plot = TRUE)
+totalrenew_pacf = Pacf(ts_energydata[,2], lag.max = 40, plot = TRUE)
+hydro_pacf = Pacf(ts_energydata[,3], lag.max = 40, plot = TRUE)
 
 ```
 
-
+The PACF graphs are very different than the ACF graphs from the previous question. Once the influence of the intermediate variables were removed, the direct correlation was not as visibly strong. The first two look like completely different graphs that now contain some negative PACFs and doesn't show a visible downward trend any longer. The hydro graph has a similar up and down trend for at least the first 14 or so lags, but is lost after. All three have lost the majority of their bars and length. 
