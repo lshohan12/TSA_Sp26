@@ -192,7 +192,42 @@ Now let's shift attention to the seasonal component.
 
 ```{r}
 #Use seasonal means model
+  #
+dummies <- seasonaldummy(ts_detrend_inflow)
 
+seas_means_model <- lm(detrend_inflow_data ~ dummies)
+summary(seas_means_model) #not as good representation as amazon interpretation  - not best model 
+#now that we have regression coeffs we need to store them to remove seasonal component 
+#store coeffs 
+beta_int <- seas_means_model$coefficients[1] #first one is intercept term but
+#have 12 coeffs from others ones
+  #will be a vector
+beta_coeff <- seas_means_model$coefficients[2:12]
+
+#compute seasonal component 
+season_inflow_data <- array(0,nobs) #array of zeros
+
+#for all my observations
+for(i in 1:nobs){
+  season_inflow_data[i] <- beta_int+beta_coeff%*%dummies[i,]
+}
+    #in janauary it will assign mean in januaray which would be minus ?? - not right
+
+#removing seasonal component from 
+deseason_inflow_data <- detrend_inflow_data - season_inflow_data
+
+#convert to ts obj
+ts_deseason_inflow_data <- ts(deseason_inflow_data, 
+                              start = c(1931,1),
+                              frequency = 12)
+
+
+#plots
+autoplot(ts_inflow_data[,iHP])+
+  autolayer(ts_deseason_inflow_data, series = 'Detrend and Deseasoned Inflow')
+
+    #can see series is centered at mean and removed - a graph the random part of data
+    #additional component you can do on graph 
 
 ```
 
