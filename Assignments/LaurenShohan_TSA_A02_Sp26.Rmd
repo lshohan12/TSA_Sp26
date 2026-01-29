@@ -122,7 +122,7 @@ autoplot(ts_energydata[,1], series = 'Total Biomass Energy Production') +
 
 
 ```
-This ts plot of total biomas energy production illustrates an increasing trend over the decades, with a stagnant period between 1990-2000 that varied quite alot between 200-300 trillion bto, but then slowy climbed from 2000 onward all the way up to near 500 trillion. 
+This ts plot of total biomas energy production illustrates an increasing trend over the decades, with a stagnant period between 1990-2000 that varied quite alot between 200-300 trillion btu, but then slowly climbed from 2000 onward all the way up to near 500 trillion. 
 
 ```{r}
 #renewable energy
