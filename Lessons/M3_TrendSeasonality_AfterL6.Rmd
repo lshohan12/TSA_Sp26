@@ -142,7 +142,7 @@ Let's identify and remove trend component. You start by fitting a linear model t
 t <- c(1:nobs)
 
 #Choose one HP 
-iHP <- 4
+iHP <- 3
 
 #Fit a linear trend to TS of iHP
 linear_trend_model <- lm(inflow_data[,iHP+1]~t)
@@ -229,12 +229,55 @@ autoplot(ts_inflow_data[,iHP])+
     #can see series is centered at mean and removed - a graph the random part of data
     #additional component you can do on graph 
 
+ts_season <- ts(season_inflow_data, start = c(1931,1), frequency = 12)
+
+autoplot(ts_inflow_data[,iHP])+
+  autolayer(ts_season, series = 'Seasonal Component') #this looks different 
+
 ```
 
 ##Exercise
 
+compute the slope coefficient of the linear trend for hydropower plant 8 --> iHP=8 
+```{r}
+#answer should be 0.89
+#Create vector t
+t <- c(1:nobs)
+
+#Choose one HP 
+iHP <- 8
+
+#Fit a linear trend to TS of iHP
+linear_trend_model <- lm(inflow_data[,iHP+1]~t)
+summary(linear_trend_model)
+
+#Store reg coefficient 
+beta0 <- as.numeric(linear_trend_model$coefficients[1]) #intercept
+beta1 <- as.numeric(linear_trend_model$coefficients[2]) #slope
+beta1
+```
+
+compute the adjusted R^2 value for the seasonal means model for hydrpower plant 3 (iHP = 3)
+```{r}
+#answer should be 0.89
+#Create vector t
+t <- c(1:nobs)
+
+#Choose one HP 
+iHP <- 3
+
+#then do rest of steps and then do 
+summary(seas_means_model)
+
+```
+
+
 Fit trend and seasonal for the other variables HP2, HP3, ...
 
+```{r}
+
+
+```
 
 ## Stationarity Tests in R
 
