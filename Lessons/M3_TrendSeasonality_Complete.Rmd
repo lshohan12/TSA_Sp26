@@ -36,7 +36,7 @@ Let's continue working with our inflow data for reservoirs in Brazil.
 
 ```{r}
 #Importing time series data from text file#
-raw_inflow_data <- read.table(file="./Data/inflowtimeseries.txt",header=FALSE,skip=0)
+raw_inflow_data <- read.table(file="/home/guest/TSA_Sp26/Data/inflowtimeseries.txt",header=FALSE,skip=0)
 
 #Trim the table to include only columns you need
 nhydro <- ncol(raw_inflow_data)-2
@@ -191,12 +191,12 @@ Note that blue line is our original series, red line is our trend, green line is
 
 ```{r}
 par(mfrow=c(1,2))  #place plot side by side
-Acf(ts_inflow_data[,i],lag.max=40,main=paste("Inflows HP",i,sep="")) 
-Acf(ts_detrend_inflow_data,lag.max=40,main=paste("Inflows HP",i,sep="")) 
+Acf(ts_inflow_data[,i],lag.max=40,main=paste("Inflows HP",iHP,sep="")) 
+Acf(ts_detrend_inflow_data,lag.max=40,main=paste("Inflows HP",iHP,sep="")) 
 
 
-Pacf(ts_inflow_data[,i],lag.max=40,main=paste("Inflows HP",i,sep=""))
-Pacf(ts_detrend_inflow_data,lag.max=40,main=paste("Inflows HP",i,sep=""))
+Pacf(ts_inflow_data[,i],lag.max=40,main=paste("Inflows HP",iHP,sep=""))
+Pacf(ts_detrend_inflow_data,lag.max=40,main=paste("Inflows HP",iHP,sep=""))
 
 ```
 
@@ -261,6 +261,7 @@ Pacf(ts_deseason_inflow_data,lag.max=40,main=paste("HP",iHP,sep=""))
 
 
 ## Let's change the order of the process, i.e, fit seasonal first and then trend
+answer is noo you should detrend time trend first, and then eliminate seasonality from data set ... 
 
 ```{r}
 #Let's choose same HP
@@ -325,7 +326,7 @@ Note that the two methods are equivalent but there is a slight difference in the
 Some test only work for non-seasonal data. So let's create another series with yearly averages for inflow.
 
 ```{r}
-iHP <- 1
+iHP <- 4
 #Group data in yearly steps instances
 inflow_data_matrix <- matrix(ts_inflow_data[,iHP],byrow=FALSE,nrow=12)
 inflow_data_yearly <- colMeans(inflow_data_matrix)
@@ -340,13 +341,15 @@ ggplot(inflow_data_new_yearly, aes(x=my_year, y=inflow_data_yearly)) +
             geom_smooth(color="red",method="lm") 
 
 ```
+on four - yearly averages have a stronger trend than hp1
+
 
 ### Mann Kendall 
 
 Check for deterministic trend.
 
 ```{r}
-iHP <- 1
+iHP <- 4
 #Since I have seasonal data I cannot use the simple MannKendall()
 #another example of functions that need a ts object
 SMKtest <- SeasonalMannKendall(ts_inflow_data[,iHP])
@@ -363,6 +366,18 @@ print("Results of Mann Kendall on average yearly series")
 print(summary(MannKendall(inflow_data_yearly)))
 
 ```
+result of= 2-sided pvalue =0.010364
+- rejecting null and saying there is a trend in my data set
+
+...result for mann kendall and smk test both lead us to reject null...
+
+compare yearly average there is no trend but look at season behavior there are trend within seasonal trend behavior??
+- smk.test = more detail on statistics in datasets
+
+
+---- on 4 -----
+on season - all S have positive vallues so seeing a trend
+pvalue for mankendall is very low which means that we reject null and say that series has deterministic trend 
 
 ### Spearman Correlation test 
 
@@ -393,6 +408,19 @@ print("Results for ADF test on yearly data/n")
 print(adf.test(inflow_data_yearly, alternative = "stationary"))
 
 ```
+p-value = 0.01 --> reject null hypo that series has a unit root/stochastic trend
+    - saying no but we see a deterministic trend with the other ones 
+    
+yearly has similar results 
+
+
+-----hp = 4 ----
+pvalue of 0.01 
+- rject null that data has unit root so thus we have a trend but based on mankendall is deterministic and not stochastic 
+
+but for yearly data --> got 0.15 - when doing time series model we run it on monthly not yearly, we go with test results you are building model for so aka monthly not yearly 
+
+
 
 ##Exercise
 
