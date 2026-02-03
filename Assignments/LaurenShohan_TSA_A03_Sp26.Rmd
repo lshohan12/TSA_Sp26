@@ -40,14 +40,86 @@ R packages needed for this assignment:"forecast","tseries", and "Kendall". Insta
 
 ```{r}
 #Load/install required package here
+library(forecast)
+library(tseries)
+library(dplyr)
+library(lubridate)
+library(ggplot2)
+library(readxl)
+library(openxlsx)
+library(Kendall)
+```
+
+```{r}
+#extract data
+energydata <- read_excel(path=
+"/home/guest/TSA_Sp26/Data/Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.xlsx",
+skip = 12, sheet="Monthly Data",col_names=FALSE)
+
+#extract columns
+energydata_cols <- read_excel(path=
+"/home/guest/TSA_Sp26/Data/Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.xlsx",
+skip = 10 ,n_max = 1, sheet="Monthly Data",col_names=FALSE) 
+
+#assign column names to data
+colnames(energydata) <- energydata_cols
+
+#select columns i want - columns 4,5,6
+energydata_2col <- energydata[,5:6]
+
+head(energydata_2col)
+```
+
+```{r}
+#converting into ts
+#starting in 1973 and going monthly, thus freq is 12
+ts_energydata <- ts(energydata_2col,start=c(1973,1), frequency=12) 
+head(ts_energydata)
 
 ```
+
 
 ##Trend Component
 
 ### Q1
 
 For each series (Total Renewable Production and Hydroelectric Consumption) create three plots arranged in a row (side-by-side): (1) time series plot, (2) ACF, (3) PACF. Use cowplot::plot_grid() to place them in a grid.
+```{r}
+
+cowplot::plot_grid(
+  
+autoplot(ts_energydata[,1], series = 'Total Renewable Energy Production') +
+  xlab("Year") +
+  ylab("Trillion BTU") +
+  theme(legend.position = "none") +
+  ggtitle('Total Renewable Energy Production Time Series'),
+
+autoplot(Acf(ts_energydata[,1], lag.max = 40, plot = TRUE)) + ggtitle('ACF'),
+
+
+autoplot(Pacf(ts_energydata[,1], lag.max = 40, plot = TRUE)) + ggtitle('PACF')
+)
+
+```
+
+```{r}
+
+cowplot::plot_grid(
+  
+autoplot(ts_energydata[,2], series = 'Hydroelectric Power Consumption') +
+  xlab("Year") +
+  ylab("Trillion BTU") +
+  theme(legend.position = "none") +
+  ggtitle('Hydroelectric Power Consumption Time Series'),
+
+autoplot(Acf(ts_energydata[,2], lag.max = 40, plot = TRUE)) + ggtitle('ACF'),
+
+
+autoplot(Pacf(ts_energydata[,2], lag.max = 40, plot = TRUE)) + ggtitle('PACF')
+)
+
+```
+
 
 ### Q2
 
@@ -56,14 +128,107 @@ From the plot in Q1, do the series Total Renewable Energy Production and Hydroel
 ### Q3
 
 Use the *lm()* function to fit a linear trend to the two time series. Ask R to print the summary of the regression. Interpret the regression output, i.e., slope and intercept. Save the regression coefficients for further analysis.
+```{r}
+nobs <- nrow(ts_energydata)
+
+#Create vector t
+t <- c(1:nobs)
+
+#fit linear trend to ts renewable and t
+lm_renewable <- lm(ts_energydata[,1]~t)
+summary(lm_renewable)
+
+#fit linear trend to ts hydro and t
+lm_hydro <- lm(ts_energydata[,2]~t)
+summary(lm_hydro)
+```
+
+```{r}
+#Store reg coefficient 
+beta0_int_renewable <- as.numeric(lm_renewable$coefficients[1]) #intercept
+beta1_slope_renewable <- as.numeric(lm_renewable$coefficients[2]) #slope
+
+beta0_int_hydro <- as.numeric(lm_hydro$coefficients[1]) #intercept
+beta1_slope_hydro <- as.numeric(lm_hydro$coefficients[2]) #slope
+```
+
+interpretation.................
+
 
 ### Q4
 
 Use the regression coefficients to detrend each series (subtract fitted linear trend). Plot detrended series and compare with the original time series from Q1. Describe what changed.
+```{r}
+# ----- renewable energy ----
+#remove the trend from series
+detrend_energy_data <- ts_energydata[,1] - (beta0_int_renewable + beta1_slope_renewable*t)
+class(detrend_energy_data)
+
+#transform to ts
+ts_detrend_energy <- ts(detrend_energy_data,frequency = 12,start=c(1973,1))
+
+#plot
+
+cowplot::plot_grid(
+  
+autoplot(ts_energydata[,1], series = 'Total Renewable Energy Production') +
+  xlab("Year") +
+  ylab("Trillion BTU") +
+  theme(legend.position = "none") +
+  ggtitle('Total Renewable Energy Production Time Series'),
+
+autoplot(ts_detrend_energy, series = 'Total Renewable Energy Production') +
+  xlab("Year") +
+  ylab("Trillion BTU") +
+  theme(legend.position = "none") +
+  ggtitle('Detrended Total Renewable Energy Production')
+
+)
+```
+
+
+```{r}
+# ----- hydro energy ----
+#remove the trend from series
+detrend_energy_data_h <- ts_energydata[,2] - (beta0_int_hydro + beta1_slope_hydro*t)
+class(detrend_energy_data_h)
+
+#transform to ts
+ts_detrend_energy_h <- ts(detrend_energy_data_h,frequency = 12,start=c(1973,1))
+
+#plot
+
+cowplot::plot_grid(
+  
+autoplot(ts_energydata[,2], series = 'Hydroelectric Power Consumption') +
+  xlab("Year") +
+  ylab("Trillion BTU") +
+  theme(legend.position = "none") +
+  ggtitle('Hydroelectric Power Consumption Time Series'),
+
+autoplot(ts_detrend_energy_h, series = 'Hydroelectric Power Consumption') +
+  xlab("Year") +
+  ylab("Trillion BTU") +
+  theme(legend.position = "none") +
+  ggtitle('Detrended Hydroelectric Power Consumption')
+
+)
+```
+
+explain..................
+
 
 ### Q5
 
 Plot ACF and PACF for the detrended series and compare with the plots from Q1. You may use plot_grid() again to get them side by side to make it easier to compare. Did the plots change? How?
+```{r}
+autoplot(Acf(ts_detrend_energy[,1], lag.max = 40, plot = TRUE)) + ggtitle('ACF'),
+
+
+autoplot(Pacf(ts_detrend_energy[,1], lag.max = 40, plot = TRUE)) + ggtitle('PACF')
+
+```
+
 
 ## Seasonal Component
 
