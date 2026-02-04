@@ -1,7 +1,7 @@
 ---
 title: "ENV 790.30 - Time Series Analysis for Energy Data | Spring 2025"
 subtitle: "Assignment 3 - Due date 02/03/26"
-author: "Student Name"
+author: "Lauren Shohan"
 output: pdf_document
 geometry: margin=2.54cm
 editor_options: 
@@ -48,6 +48,7 @@ library(ggplot2)
 library(readxl)
 library(openxlsx)
 library(Kendall)
+library(cowplot)
 ```
 
 ```{r}
@@ -94,17 +95,17 @@ autoplot(ts_energydata[,1], series = 'Total Renewable Energy Production') +
   theme(legend.position = "none") +
   ggtitle('Total Renewable Energy Production Time Series'),
 
-autoplot(Acf(ts_energydata[,1], lag.max = 40, plot = TRUE)) + ggtitle('ACF'),
+autoplot(Acf(ts_energydata[,1], lag.max = 40, plot = FALSE)) + ggtitle('ACF'),
 
 
-autoplot(Pacf(ts_energydata[,1], lag.max = 40, plot = TRUE)) + ggtitle('PACF')
+autoplot(Pacf(ts_energydata[,1], lag.max = 40, plot = FALSE)) + ggtitle('PACF'), nrow=1
 )
 
 ```
 
 ```{r}
 
-cowplot::plot_grid(
+plot_grid(
   
 autoplot(ts_energydata[,2], series = 'Hydroelectric Power Consumption') +
   xlab("Year") +
@@ -112,10 +113,43 @@ autoplot(ts_energydata[,2], series = 'Hydroelectric Power Consumption') +
   theme(legend.position = "none") +
   ggtitle('Hydroelectric Power Consumption Time Series'),
 
-autoplot(Acf(ts_energydata[,2], lag.max = 40, plot = TRUE)) + ggtitle('ACF'),
+autoplot(Acf(ts_energydata[,2], lag.max = 40, plot = FALSE)) + ggtitle('ACF'),
 
 
-autoplot(Pacf(ts_energydata[,2], lag.max = 40, plot = TRUE)) + ggtitle('PACF')
+autoplot(Pacf(ts_energydata[,2], lag.max = 40, plot = FALSE)) + ggtitle('PACF'), nrow = 1
+)
+
+```
+
+I also made them not three in a row because they squeezed when I did this (above) and it was hard to analyze them like this, I didn't want points off because they weren't directly in a row with one another though.
+```{r}
+
+cowplot::plot_grid(
+  
+autoplot(ts_energydata[,1], series = 'Total Renewable Energy Production') +
+  xlab("Year") +
+  ylab("Trillion BTU") +
+  theme(legend.position = "none") +
+  ggtitle('Total Renewable Energy Production Time Series'),
+
+autoplot(Acf(ts_energydata[,1], lag.max = 40, plot = FALSE)) + ggtitle('ACF'),
+
+
+autoplot(Pacf(ts_energydata[,1], lag.max = 40, plot = FALSE)) + ggtitle('PACF')
+)
+
+plot_grid(
+  
+autoplot(ts_energydata[,2], series = 'Hydroelectric Power Consumption') +
+  xlab("Year") +
+  ylab("Trillion BTU") +
+  theme(legend.position = "none") +
+  ggtitle('Hydroelectric Power Consumption Time Series'),
+
+autoplot(Acf(ts_energydata[,2], lag.max = 40, plot = FALSE)) + ggtitle('ACF'),
+
+
+autoplot(Pacf(ts_energydata[,2], lag.max = 40, plot = FALSE)) + ggtitle('PACF')
 )
 
 ```
@@ -124,6 +158,13 @@ autoplot(Pacf(ts_energydata[,2], lag.max = 40, plot = TRUE)) + ggtitle('PACF')
 ### Q2
 
 From the plot in Q1, do the series Total Renewable Energy Production and Hydroelectric Power Consumption appear to have a trend? If yes, what kind of trend?
+
+Total Renewable Energy Production appears to have an upward linear trend, with a small dip around year 2000. However, it steadily is rising over the years showcasing an increase of renewable enegy production coming onto the grid and the push for renewables. 
+Hydroelectric power consumption shows a normal seasonal trend one can expect with hydro power, with a strong seasonal component showcases dips during drier periods and higher spikes for excess water periods. 
+
+Both ACF graphs have a general downward trend over a certain amount of lags. This slow decay
+likely indicates strong persistence or memory of the series. While the lags and spikes for the PACF graphs have decreased, the strong spikes at consistent intervals is a good indicator of seasonality.
+
 
 ### Q3
 
@@ -152,8 +193,11 @@ beta0_int_hydro <- as.numeric(lm_hydro$coefficients[1]) #intercept
 beta1_slope_hydro <- as.numeric(lm_hydro$coefficients[2]) #slope
 ```
 
-interpretation.................
-
+> Answer:
+Renewable Energy Production summary:
+    Intercept is at 171.448 while slope is 0.74999. These summary results show a very strong, positive statistically significant trend over time with a pvalue < 2.2e-16. The R^2 value of 0.8201 shows that around 82% of the variation can be accounted for by the renewable energy production, suggesting a pretty good model fit. 
+Hydro Power Consumption summary:
+    Intercept is at 83.2238 while slope is -0.012199. These summary results show a negative yet statistically significant trend over time with a pvalue 6.547e-05. The R^2 value of 0.02342 shows that only around 23% of the variation can be accounted for by hydro, which is very low suggesting other factors are in play when with the fluctuations of hydro consumption. 
 
 ### Q4
 
@@ -169,65 +213,66 @@ ts_detrend_energy <- ts(detrend_energy_data,frequency = 12,start=c(1973,1))
 
 #plot
 
-cowplot::plot_grid(
+autoplot(ts_energydata[,1], series = 'Original') +
+  autolayer(ts_detrend_energy, series = 'Detrended') +
+  xlab("Year") +
+  ylab("Trillion BTU") +
+  ggtitle('Original vs. Detrended Total Renewable Energy Production') +
+  scale_color_manual(values = c('Original' = 'darkgreen', 'Detrended' = 'lightgreen'))
   
-autoplot(ts_energydata[,1], series = 'Total Renewable Energy Production') +
-  xlab("Year") +
-  ylab("Trillion BTU") +
-  theme(legend.position = "none") +
-  ggtitle('Total Renewable Energy Production Time Series'),
 
-autoplot(ts_detrend_energy, series = 'Total Renewable Energy Production') +
-  xlab("Year") +
-  ylab("Trillion BTU") +
-  theme(legend.position = "none") +
-  ggtitle('Detrended Total Renewable Energy Production')
 
-)
 ```
 
 
 ```{r}
 # ----- hydro energy ----
 #remove the trend from series
-detrend_energy_data_h <- ts_energydata[,2] - (beta0_int_hydro + beta1_slope_hydro*t)
-class(detrend_energy_data_h)
+detrend_energy_data_hydro <- ts_energydata[,2] - (beta0_int_hydro + beta1_slope_hydro*t)
+class(detrend_energy_data_hydro)
 
 #transform to ts
-ts_detrend_energy_h <- ts(detrend_energy_data_h,frequency = 12,start=c(1973,1))
+ts_detrend_energy_hydro <- ts(detrend_energy_data_hydro,frequency = 12,start=c(1973,1))
 
 #plot
 
-cowplot::plot_grid(
-  
-autoplot(ts_energydata[,2], series = 'Hydroelectric Power Consumption') +
+autoplot(ts_energydata[,2], series = 'Original') +
+  autolayer(ts_detrend_energy_hydro, series = 'Detrended') +
   xlab("Year") +
   ylab("Trillion BTU") +
-  theme(legend.position = "none") +
-  ggtitle('Hydroelectric Power Consumption Time Series'),
-
-autoplot(ts_detrend_energy_h, series = 'Hydroelectric Power Consumption') +
-  xlab("Year") +
-  ylab("Trillion BTU") +
-  theme(legend.position = "none") +
-  ggtitle('Detrended Hydroelectric Power Consumption')
-
-)
+  ggtitle('Original vs. Detrended Total Hydroelectric Power Consumption') +
+  scale_color_manual(values = c('Original' = 'blue', 'Detrended' = 'lightblue'))
 ```
 
-explain..................
+> Answer: Both renewable and hydro graphs show a difference after being detrended. Both detrended series are much lower than the original series, but follow similar patterns as the original. However, there is a difference. While hydro detrended seems to follow its original series dip for dip, the renewable energy detrended series is slightly different than the original. Around the year 1985-2000, while the original series increases, the detrended series decreases. Post 2000, both series follow an increasing trend. Both detrended series hover around the 0 trillion btu line, dipping into positive and negative values. 
 
 
 ### Q5
 
 Plot ACF and PACF for the detrended series and compare with the plots from Q1. You may use plot_grid() again to get them side by side to make it easier to compare. Did the plots change? How?
 ```{r}
-autoplot(Acf(ts_detrend_energy[,1], lag.max = 40, plot = TRUE)) + ggtitle('ACF'),
-
-
-autoplot(Pacf(ts_detrend_energy[,1], lag.max = 40, plot = TRUE)) + ggtitle('PACF')
+#renewable
+plot_grid(
+  autoplot(Acf(ts_detrend_energy, lag.max = 40, plot = FALSE)) + ggtitle('ACF Detrended Renewable'), #detrended
+  autoplot(Pacf(ts_detrend_energy, lag.max = 40, plot = FALSE)) + ggtitle('PACF Detrended Renewable'),
+  autoplot(Acf(ts_energydata[,1], lag.max = 40, plot = FALSE)) + ggtitle('ACF Original'), #original from q1
+  autoplot(Pacf(ts_energydata[,1], lag.max = 40, plot = FALSE)) + ggtitle('PACF Original')
+  )
 
 ```
+
+```{r}
+#hydro
+plot_grid(
+  autoplot(Acf(ts_detrend_energy_hydro, lag.max = 40, plot = FALSE)) + ggtitle('ACF Detrended Hydro'), #detrended
+  autoplot(Pacf(ts_detrend_energy_hydro, lag.max = 40, plot = FALSE)) + ggtitle('PACF Detrended Hydro'),
+  autoplot(Acf(ts_energydata[,2], lag.max = 40, plot = FALSE)) + ggtitle('ACF Original'), #original from q1
+  autoplot(Pacf(ts_energydata[,2], lag.max = 40, plot = FALSE)) + ggtitle('PACF Original')
+  )
+
+```
+
+> Answer: After detrending renewable, the ACF decayed much quicker than the original with it almost reaching 0.5 while the original ACF only made it to 0.75. The PACF graphs also became clearer after being detrended, with non signficant spikes increasing and becoming higher in the detrended PACF. However, with the hydro graphs nothing changed between the ACF and PACF detrended and original. 
 
 
 ## Seasonal Component
@@ -238,16 +283,123 @@ Set aside the detrended series and consider the original series again from Q1 to
 
 Just by looking at the time series and the acf plots, do the series seem to have a seasonal trend? No need to run any code to answer your question. Just type in you answer below.
 
-> Answer:
+> Answer: Yes they both seem to have seasonality components. The hydro time series shows an obvious visual seasonality component from the time series graph, with dips and spikes correlately to certain months over and over again. The renewable time series potentially showcases seasonality in the PACF graphs with repeating spikes on certain intervals which indicates seasonality.  
 
 ### Q7
 
 Use function *lm()* to fit a seasonal means model (i.e. using the seasonal dummies) to the two time series. Ask R to print the summary of the regression. Interpret the regression output. From the results, which series have a seasonal trend? Do the results match you answer to Q6?
 
+```{r}
+#----- renewable ---------
+#First create the seasonal dummies
+dummies_renewable <- seasonaldummy(ts_energydata[,1])
+
+#Then fit a linear model to the seasonal dummies
+seas_means_model_renewable <- lm(ts_energydata[,1]~dummies_renewable)
+summary(seas_means_model_renewable)
+
+```
+
+```{r}
+#----- hydroooooo ---------
+#First create the seasonal dummies
+dummies_hydro <- seasonaldummy(ts_energydata[,2])
+
+#Then fit a linear model to the seasonal dummies
+seas_means_model_hydro <- lm(ts_energydata[,2]~dummies_hydro)
+summary(seas_means_model_hydro)
+
+```
+
+> Answer: None of the pvalues for renewable were statistically significant, going month by month none were significant nor was the main summary pvalue of 0.9223. Thus total renewable energy production doesnt show a statistically significant seasonal pattern, which was partially the conclusion i came to previously (i said there was an unclear seasonal pattern).
+Going month by month with hydro shows that it has strong and statistically significant seasonality component with many months being signficant. This was the conclusion i came to previously. This is typical for hydro, with drier months lower production and more rainfall having higher production during summer/spring months. 
+
+
 ### Q8
 
 Use the regression coefficients from Q7 to deseason the series. Plot the deseason series and compare with the plots from part Q1. Did anything change?
+```{r}
+#Look at the regression coefficient. These will be the values of Beta
+#Store regression coefficients
+
+# ---- renewable ------
+beta_int_renewable <- seas_means_model_renewable$coefficients[1]
+beta_coeff_renewable <- seas_means_model_renewable$coefficients[2:12]
+
+# ------- hydro ---------
+beta_int_hydro <- seas_means_model_hydro$coefficients[1]
+beta_coeff_hydro <- seas_means_model_hydro$coefficients[2:12]
+
+```
+
+```{r}
+#compute seasonal component
+# ------- renewable -------
+renewable_seas_comp <- array(0,nobs)
+for(i in 1:nobs){
+  renewable_seas_comp[i] <- (beta_int_renewable+beta_coeff_renewable %*% dummies_renewable[i,])
+}
+
+#Removing seasonal component
+deseason_renewable_data <- ts_energydata[,1]-renewable_seas_comp
+
+#Converting to a time series object
+ts_deseason_renewable_data <- ts(deseason_renewable_data,frequency=12,start=c(1973,1))
+
+#Understanding what we did
+autoplot(ts_energydata[,1], series = 'Original') +
+  autolayer(ts_deseason_renewable_data, series="Deseasoned") +
+  ylab("Trillion BTU") +
+  ggtitle('Original & Deseasoned Renewable Energy')
+
+```
+
+```{r}
+#compute seasonal component
+# ------- hydro -------
+hydro_seas_comp <- array(0,nobs)
+for(i in 1:nobs){
+  hydro_seas_comp[i] <- (beta_int_hydro+beta_coeff_hydro %*% dummies_hydro[i,])
+}
+
+#Removing seasonal component
+deseason_hydro_data <- ts_energydata[,2]-hydro_seas_comp
+
+#Converting to a time series object
+ts_deseason_hydro_data <- ts(deseason_hydro_data,frequency=12,start=c(1973,1))
+
+#Understanding what we did
+autoplot(ts_energydata[,2], series = 'Original') +
+    autolayer(ts_deseason_hydro_data, series="Deseasoned")+
+     ylab("Trillion BTU") + ggtitle('Original & Deseasoned Hydro Energy')
+
+```
+> Answer: Deseasoning had no effect on renewable production because the seasonal means model was not statistically significant thus it is the same graph just much lower. However, the deseasoned hydro graph does change and becomes smoother and easier to follow visually with reduced oscillations. Deseasoning hydro reduces these fluctuations which affirms my conclusion of a strong seasonality component. 
+
 
 ### Q9
 
 Plot ACF and PACF for the deseason series and compare with the plots from Q1. You may use plot_grid() again to get them side by side. Did the plots change? How?
+
+```{r}
+#renewable
+plot_grid(
+  autoplot(Acf(ts_deseason_renewable_data, lag.max = 40, plot = FALSE)) + ggtitle('ACF Deseasoned Renewable'),
+  autoplot(Pacf(ts_deseason_renewable_data, lag.max = 40, plot = FALSE)) + ggtitle('PACF Deseasoned Renewable'),
+  autoplot(Acf(ts_energydata[,1], lag.max = 40, plot = FALSE)) + ggtitle('ACF Original'),
+  autoplot(Pacf(ts_energydata[,1], lag.max = 40, plot = FALSE)) + ggtitle('PACF Original')
+  )
+
+#renewable
+plot_grid(
+  autoplot(Acf(ts_deseason_hydro_data, lag.max = 40, plot = FALSE)) + ggtitle('ACF Deseasoned Hydro'),
+  autoplot(Pacf(ts_deseason_hydro_data, lag.max = 40, plot = FALSE)) + ggtitle('PACF Deseasoned Hydro'),
+  autoplot(Acf(ts_energydata[,1], lag.max = 40, plot = FALSE)) + ggtitle('ACF Original'),
+  autoplot(Pacf(ts_energydata[,1], lag.max = 40, plot = FALSE)) + ggtitle('PACF Original')
+  )
+
+
+```
+
+> Answer: For renewable, the ACF graph did not change at all but the PACF deseasoned graph did change. The spikes decreased and basically all of them became insignificant. With hydro, both the ACF and PACF graph changed drastically. The ACF original showed a smooth downward trend, while the deseasoned one became bumpy, with a major wave in the middle and ultimately turned negative. The PACF deseasoned followed a similar trend to the renewable, with the PACF spikes decreased in height very signficantly compared to the original.   
+
