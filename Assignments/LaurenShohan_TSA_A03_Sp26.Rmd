@@ -85,6 +85,8 @@ head(ts_energydata)
 ### Q1
 
 For each series (Total Renewable Production and Hydroelectric Consumption) create three plots arranged in a row (side-by-side): (1) time series plot, (2) ACF, (3) PACF. Use cowplot::plot_grid() to place them in a grid.
+
+
 ```{r}
 
 cowplot::plot_grid(
@@ -118,6 +120,7 @@ autoplot(Acf(ts_energydata[,2], lag.max = 40, plot = FALSE)) + ggtitle('ACF'),
 
 autoplot(Pacf(ts_energydata[,2], lag.max = 40, plot = FALSE)) + ggtitle('PACF'), nrow = 1
 )
+
 
 ```
 
@@ -165,6 +168,16 @@ Hydroelectric power consumption shows a normal seasonal trend one can expect wit
 Both ACF graphs have a general downward trend over a certain amount of lags. This slow decay
 likely indicates strong persistence or memory of the series. While the lags and spikes for the PACF graphs have decreased, the strong spikes at consistent intervals is a good indicator of seasonality.
 
+------ CLASS NOTES ------
+renewable
+- acf slow decay means it has a long memory - PACF you can see some spikes 
+- acf trend is so strong that it overlays the seasonality 
+- pacf dont really worry about negative / positive spikes
+- pacf is delayed at the seasonal marks bc its conditional on previous lags so it leaves some short term seasonal memory in the process
+
+hydro 
+- opposite of renewable - up and down and no general upward trend
+
 
 ### Q3
 
@@ -198,6 +211,11 @@ Renewable Energy Production summary:
     Intercept is at 171.448 while slope is 0.74999. These summary results show a very strong, positive statistically significant trend over time with a pvalue < 2.2e-16. The R^2 value of 0.8201 shows that around 82% of the variation can be accounted for by the renewable energy production, suggesting a pretty good model fit. 
 Hydro Power Consumption summary:
     Intercept is at 83.2238 while slope is -0.012199. These summary results show a negative yet statistically significant trend over time with a pvalue 6.547e-05. The R^2 value of 0.02342 shows that only around 23% of the variation can be accounted for by hydro, which is very low suggesting other factors are in play when with the fluctuations of hydro consumption. 
+
+---------- CLASS NOTES ----------
+renewable - pvalue super low so meaninful regression - 82% of the time this is the result of the variability 
+hydro - not great regression over time and is negative - time is only explaing 23% of the variability 
+
 
 ### Q4
 
@@ -244,7 +262,12 @@ autoplot(ts_energydata[,2], series = 'Original') +
   scale_color_manual(values = c('Original' = 'blue', 'Detrended' = 'lightblue'))
 ```
 
-> Answer: Both renewable and hydro graphs show a difference after being detrended. Both detrended series are much lower than the original series, but follow similar patterns as the original. However, there is a difference. While hydro detrended seems to follow its original series dip for dip, the renewable energy detrended series is slightly different than the original. Around the year 1985-2000, while the original series increases, the detrended series decreases. Post 2000, both series follow an increasing trend. Both detrended series hover around the 0 trillion btu line, dipping into positive and negative values. 
+> Answer: Both renewable and hydro graphs show a difference after being detrended. Both detrended series are much lower than the original series, but follow similar patterns as the original. However, there is a difference. While hydro detrended seems to follow its original series dip for dip, the renewable energy detrended series is slightly different than the original. Around the year 1985-2000, while the original series increases, the detrended series decreases. Post 2000, both series follow an increasing trend. Both detrended series hover around the 0 trillion btu line, dipping into positive and negative values.
+
+-------- CLASS NOTES ---------
+renewable - detrended series is still trending over time - where the slope is higher in the OG is not enough to detrend it so its not stationary? perhaps linear trend model isnt the best to detrend the series - could detrend again??
+
+hydro - detrended series is shifted down -- no change to the movement of the series over time 
 
 
 ### Q5
@@ -273,6 +296,18 @@ plot_grid(
 ```
 
 > Answer: After detrending renewable, the ACF decayed much quicker than the original with it almost reaching 0.5 while the original ACF only made it to 0.75. The PACF graphs also became clearer after being detrended, with non signficant spikes increasing and becoming higher in the detrended PACF. However, with the hydro graphs nothing changed between the ACF and PACF detrended and original. 
+
+------------CLASS NOTES -----------
+RENEWABLE
+- acf detrended - telling the same story of after detrending you still have slow decay of acf lags, but still not dropping to zero fast.. still slowly decaying over time and another indication that detrending wasnt successful 
+    - detrended you can see the spikes more easily on 12,24,36 - eliminated confusion and emerged maybe there is a seasonal component
+    - bc trend so strong its hard to make conclusions about seasonality 
+- pacf - dont see alot of change except that coeeficients seem to be smaller 
+
+HYDRO
+- acf - very similar so that detrending didnt do much - still have seasonal component
+- pacf similar behavior too 
+
 
 
 ## Seasonal Component
@@ -315,6 +350,16 @@ summary(seas_means_model_hydro)
 Going month by month with hydro shows that it has strong and statistically significant seasonality component with many months being signficant. This was the conclusion i came to previously. This is typical for hydro, with drier months lower production and more rainfall having higher production during summer/spring months. 
 
 
+-----CLASS NOTES----
+renewable - non statistically sig ... estimate is what you want for model but pvalue showing they arent different from zero?
+  - what does this tell about seasonality - seasonality may not be present or seasonal means model isnt good rep for time series seasonal component 
+  - even when you run it on detrended, and deseasoned its not a good rep and something is still covering the trend 
+  
+hydro - r squared value is strong?? 
+  
+
+
+
 ### Q8
 
 Use the regression coefficients from Q7 to deseason the series. Plot the deseason series and compare with the plots from part Q1. Did anything change?
@@ -331,6 +376,11 @@ beta_int_hydro <- seas_means_model_hydro$coefficients[1]
 beta_coeff_hydro <- seas_means_model_hydro$coefficients[2:12]
 
 ```
+
+------class notes------
+trend still the same just reduced oscilations a bit
+deseasoned brought level to zero bc of intercept term in regression model 
+
 
 ```{r}
 #compute seasonal component
@@ -402,4 +452,10 @@ plot_grid(
 ```
 
 > Answer: For renewable, the ACF graph did not change at all but the PACF deseasoned graph did change. The spikes decreased and basically all of them became insignificant. With hydro, both the ACF and PACF graph changed drastically. The ACF original showed a smooth downward trend, while the deseasoned one became bumpy, with a major wave in the middle and ultimately turned negative. The PACF deseasoned followed a similar trend to the renewable, with the PACF spikes decreased in height very signficantly compared to the original.   
+
+
+
+want acf to drop to lower lags eventually 
+
+
 
