@@ -1,7 +1,7 @@
 ---
 title: "ENV 797 - Time Series Analysis for Energy and Environment Applications | Spring 2026"
 subtitle: "Assignment 4 - Due date 02/10/26"
-author: "Student Name"
+author: "Lauren Shohan"
 output: pdf_document
 geometry: margin=2.54cm
 editor_options: 
@@ -22,6 +22,15 @@ R packages needed for this assignment: "xlsx" or "readxl", "ggplot2", "forecast"
 
 ```{r message=FALSE, warning=FALSE}
 #Load/install required package here
+library(forecast)
+library(tseries)
+library(dplyr)
+library(lubridate)
+library(ggplot2)
+library(readxl)
+library(openxlsx)
+library(Kendall)
+library(cowplot)
 
 ```
 
@@ -31,6 +40,26 @@ Consider the same data you used for A3 from the spreadsheet "Table_10.1_Renewabl
 
 ```{r message=FALSE, warning=FALSE}
 #Importing data set - you may copy your code from A3
+
+#extract data
+energydata <- read_excel(path=
+"/home/guest/TSA_Sp26/Data/Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.xlsx",
+skip = 12, sheet="Monthly Data",col_names=FALSE)
+
+#extract columns
+energydata_cols <- read_excel(path=
+"/home/guest/TSA_Sp26/Data/Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.xlsx",
+skip = 10 ,n_max = 1, sheet="Monthly Data",col_names=FALSE) 
+
+#assign column names to data
+colnames(energydata) <- energydata_cols
+
+#select column i want
+energydata_1col <- energydata[,5]
+
+#converting into ts
+#starting in 1973 and going monthly, thus freq is 12
+ts_energydata <- ts(energydata_1col,start=c(1973,1), frequency=12) 
 
 
 ```
@@ -51,15 +80,67 @@ Try differencing at lag 1 only once, i.e., make `lag=1` and `differences=1`. Plo
 
 ```{r}
 
+diff_renewable <- diff(ts_energydata, lag = 1, differences = 1)
+ts_diff_renewable <- ts(diff_renewable, start = c(1973,1), frequency = 12)
+
+
+autoplot(diff_renewable, series = 'Diff') +
+  autolayer(ts_energydata, series = 'Original') +
+  xlab('Year') +
+  ylab('Trillion BTU')
+
 ```
 
+>Answer: 
 
 ### Q2
 Copy and paste part of your code for A3 where you run the regression for Total Renewable Energy Production and subtract that from the original series. This should be the code for Q3 and Q4. make sure you use assign same name for the time series object that you had in A3, otherwise the code will not work.
 
 ```{r}
+nobs <- nrow(ts_energydata)
+
+#Create vector t
+t <- c(1:nobs)
+
+#fit linear trend to ts renewable and t
+lm_renewable <- lm(ts_energydata[,1]~t)
+summary(lm_renewable)
+
+#Store reg coefficient 
+beta0_int_renewable <- as.numeric(lm_renewable$coefficients[1]) #intercept
+beta1_slope_renewable <- as.numeric(lm_renewable$coefficients[2]) #slope
+
+nobs <- nrow(ts_energydata)
+
+#Create vector t
+t <- c(1:nobs)
+
+#fit linear trend to ts renewable and t
+lm_renewable <- lm(ts_energydata[,1]~t)
+summary(lm_renewable)
+
+#Store reg coefficient 
+beta0_int_renewable <- as.numeric(lm_renewable$coefficients[1]) #intercept
+beta1_slope_renewable <- as.numeric(lm_renewable$coefficients[2]) #slope
+
+
+#remove the trend from series
+detrend_energy_data <- ts_energydata[,1] - (beta0_int_renewable + beta1_slope_renewable*t)
+class(detrend_energy_data)
+
+#transform to ts
+ts_detrend_energy <- ts(detrend_energy_data,frequency = 12,start=c(1973,1))
+
+#plot
+autoplot(ts_energydata[,1], series = 'Original') +
+  autolayer(ts_detrend_energy, series = 'Detrended') +
+  xlab("Year") +
+  ylab("Trillion BTU") +
+  ggtitle('Original vs. Detrended Total Renewable Energy Production') +
+  scale_color_manual(values = c('Original' = 'darkgreen', 'Detrended' = 'lightgreen'))
 
 ```
+
 
 ### Q3
 Now let's compare the differenced series with the detrended series you calculated on A3. In other words, for the "Total Renewable Energy Production" compare the differenced series from Q1 with the series you detrended in Q2 using linear regression. 
@@ -70,6 +151,14 @@ What can you tell from this plot? Which method seems to have been more efficient
 
 ```{r}
 
+autoplot(ts_energydata, series = 'Original') +
+  autolayer(detrend_energy_data, series = 'Detrended lm()') + 
+  autolayer(diff_renewable, series = 'Differenced') + 
+  xlab('Year') +
+  ylab('Trillion BTU') + 
+  ggtitle('Total Renewable Energy Production')
+
+
 ```
 
 > Answer: 
@@ -78,6 +167,14 @@ What can you tell from this plot? Which method seems to have been more efficient
 Plot the ACF for the three series and compare the plots. Add the argument `ylim=c(-0.5,1)` to the autoplot() or Acf() function - whichever you are using to generate the plots - to make sure all three y axis have the same limits. Looking at the ACF which method do you think was more efficient in eliminating the trend? The linear regression or differencing?
 
 ```{r}
+
+plot_grid(
+  autoplot(Acf(ts_detrend_energy, lag.max = 40, plot = FALSE, ylim=c(-0.5,1))) + 
+    ggtitle('ACF Detrended'), 
+  autoplot(Acf(diff_renewable, lag.max = 40, plot = FALSE, ylim=c(-0.5,1))) + 
+    ggtitle('ACF Differenced'),
+  autoplot(Acf(ts_energydata, lag.max = 40, plot = FALSE, ylim=c(-0.5,1))) + 
+    ggtitle('ACF Original'))
 
 ```
 
