@@ -83,15 +83,21 @@ Try differencing at lag 1 only once, i.e., make `lag=1` and `differences=1`. Plo
 diff_renewable <- diff(ts_energydata, lag = 1, differences = 1)
 ts_diff_renewable <- ts(diff_renewable, start = c(1973,1), frequency = 12)
 
+autoplot(diff_renewable, series = 'Diff') +
+  xlab('Year') +
+  ylab('Trillion BTU') + 
+  ggtitle('Differenced Renewable Production Series')
+
 
 autoplot(diff_renewable, series = 'Diff') +
   autolayer(ts_energydata, series = 'Original') +
   xlab('Year') +
-  ylab('Trillion BTU')
+  ylab('Trillion BTU') +
+  ggtitle('Differenced vs Original Renewable Production Series')
 
 ```
+> Answer: Since the spikes are oscillating around zero and have an average mean of zero there is no visible trend, it is staying steady. The differenced series compared to the original shows a drastic decrease in the linear trend that was seen in the original series. 
 
->Answer: 
 
 ### Q2
 Copy and paste part of your code for A3 where you run the regression for Total Renewable Energy Production and subtract that from the original series. This should be the code for Q3 and Q4. make sure you use assign same name for the time series object that you had in A3, otherwise the code will not work.
@@ -161,7 +167,7 @@ autoplot(ts_energydata, series = 'Original') +
 
 ```
 
-> Answer: 
+> Answer: The plot shows that while the detrended series took out a large portion of the upward trend shown in the original and brought it down to zero, the differenced series was more effective. The differenced series fluctates around zero with no upward or downward trend, showcasing the trend was effectively removed and looks visibly stationary. 
 
 ### Q4
 Plot the ACF for the three series and compare the plots. Add the argument `ylim=c(-0.5,1)` to the autoplot() or Acf() function - whichever you are using to generate the plots - to make sure all three y axis have the same limits. Looking at the ACF which method do you think was more efficient in eliminating the trend? The linear regression or differencing?
@@ -169,30 +175,64 @@ Plot the ACF for the three series and compare the plots. Add the argument `ylim=
 ```{r}
 
 plot_grid(
-  autoplot(Acf(ts_detrend_energy, lag.max = 40, plot = FALSE, ylim=c(-0.5,1))) + 
+  autoplot(Acf(ts_detrend_energy, lag.max = 40, plot = FALSE)) + 
+    coord_cartesian(ylim=c(-0.5,1)) + #coord cartesian to make ylim work ! - chat helped with this fix 
     ggtitle('ACF Detrended'), 
-  autoplot(Acf(diff_renewable, lag.max = 40, plot = FALSE, ylim=c(-0.5,1))) + 
+  autoplot(Acf(diff_renewable, lag.max = 40, plot = FALSE)) + 
+    coord_cartesian(ylim=c(-0.5,1)) +
     ggtitle('ACF Differenced'),
-  autoplot(Acf(ts_energydata, lag.max = 40, plot = FALSE, ylim=c(-0.5,1))) + 
+  autoplot(Acf(ts_energydata, lag.max = 40, plot = FALSE)) + 
+    coord_cartesian(ylim=c(-0.5,1)) +
     ggtitle('ACF Original'))
 
 ```
 
-> Answer: 
+> Answer: Looking at the ACFs, I think the differenced method was more efficient with eliminating the trend and thus showcases the seasonality component of the series. The detrended series looks very similar to the original ACF, with only small spikes at the seasonal months of 12,24,36. However, once differenced you can clearly see the seasonal component with constant spikes at 12,25,36 and there is no trend blocking the seasonality display.
+
 
 ### Q5
 Compute the Seasonal Mann-Kendall and ADF Test for the original "Total Renewable Energy Production" series. Ask R to print the results. Interpret the results for both test. What is the conclusion from the Seasonal Mann Kendall test? What's the conclusion for the ADF test? Do they match what you observed in Q3 plot? Recall that having a unit root means the series has a stochastic trend. And when a series has stochastic trend we need to use differencing to remove the trend.
 
 ```{r}
+# --------- mann kendall ------------
+SMKtest <- SeasonalMannKendall(ts_energydata)
+print("Results for Seasonal Mann Kendall /n")
+print(summary(SMKtest))
+
+# ------------ ADF --------------
+#Null hypothesis is that data has a unit root
+print("Results for ADF test/n")
+print(adf.test(ts_energydata,alternative = "stationary"))
+
 
 ```
 
 > Answer: 
+> Seasonal Mann Kendall: 
+  The results show a tau of 0.799 which indicates a strong positive monotonic trend and the small pvalue of <2.22e-16 means we should reject the null hypothesis that its stationary. The SMK test showcases that there is strong evidence of an increasing total renewable energy prodution even after tackling the seasonality component and that a trend exists.
+> ADF test: 
+  The ADF test has a dickey-fuller number of -1.0247 and a pvalue of 0.9347, with this large pvalue we do not reject the null hypothesis that the series has a unit root/non-stationary. This showcases total renewable energy production is non-stationary and has a stochastic trend. 
+> Yes these results matched what I saw in Q3, with the original series haveing a strong upward trend and that differencing series removed that trend and fluctuated around zero. Thus these results showcase the need to difference.
 
 ### Q6
 Aggregate the original "Total Renewable Energy Production" series by year. You can use the same procedure we used in class. Store series in a matrix where rows represent months and columns represent years. And then take the columns mean using function colMeans(). Recall the goal is the remove the seasonal variation from the series to check for trend. Convert the accumulates yearly series into a time series object and plot the series using autoplot().
 
 ```{r}
+#2025 is not a complete year so i decided to trim it out to do yearly aggregation, 
+#this will produce similar results if i had also kept those few months
+
+ts_energydata_trimmed <- window(ts_energydata, end=c(2024, 12))
+
+#Group data in yearly steps instances
+energy_data_matrix <- matrix(ts_energydata_trimmed,byrow=FALSE,nrow=12)
+energy_data_yearly <- colMeans(energy_data_matrix)
+
+
+energy_data_new_yearly <- ts(energy_data_yearly, start = 1973, frequency = 1)
+
+autoplot(energy_data_new_yearly) +
+            geom_line(color="blue") +
+            geom_smooth(color="red",method="lm") 
 
 ```
 
@@ -201,6 +241,20 @@ Apply the Mann Kendall, Spearman correlation rank test and ADF. Are the results 
 
 ```{r}
 
+# --------- mann kendall ------------
+SMKtest_yearly <- SeasonalMannKendall(energy_data_new_yearly)
+print("Results for Seasonal Mann Kendall Yearly /n")
+print(summary(SMKtest_yearly))
+
+
+
+# ------------ ADF --------------
+#Null hypothesis is that data has a unit root
+print("Results for ADF test/n")
+print(adf.test(energy_data_new_yearly,alternative = "stationary"))
+
 ```
 
-> Answer: 
+> Answer: With the SMK test, the large tau of 0.817 showcases a strong increasing trend and the very small pvalue of <2.22e-16 tells us to reject the null that says there is no trend. This is exactly the same as the results from Q5 monthly results. Thus, there is strong evidence there is a positive monotonic trend in the series. 
+The ADF test of dickey-fuller of -0.853 and pvalue of 0.9515 we fail to reject the null hypothesis and thus this series having a unit root we can conclude the yearly series is non stationary and has a stochastic trend which is what we determined from Q5. 
+

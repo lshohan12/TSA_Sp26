@@ -39,7 +39,7 @@ Today we will work with wind speed data.
 ```{r}
 
 #Importing time series data from text file#
-wind_data <- read.csv(file="./Data/Wind_Speed_PortArthurTX_Processed.csv",header=TRUE,stringsAsFactors = TRUE)
+wind_data <- read.csv(file="/home/guest/TSA_Sp26/Data/Wind_Speed_PortArthurTX_Processed.csv",header=TRUE,stringsAsFactors = TRUE)
 
 #creating data object
 wind_data$DATE <- ym(wind_data$DATE)
@@ -65,7 +65,7 @@ tsclean() from package 'forecast' identify and replace outliers and missing valu
 
 ```{r}
 
-clean_wind_data <- tsclean(ts_wind_data)  #object should be a time series
+clean_wind_data <- tsclean(ts_wind_data)  #object should be a time series - uses local mean - dont need to worry about trend and seasonality - remove outlier funct you would need to deseason and detrend 
 
 autoplot(clean_wind_data, series="Wind Clean") +
   autolayer(ts_wind_data, series="Wind Raw") +
@@ -80,6 +80,17 @@ If you want to handle missing data, but do not want to remove outliers, here are
 
 `forecast::na.interp()`
 `zoo::na.approx()`
+
+
+```{r}
+summary(wind_data$AWND, frequency = 12, start()) #wil show how many NAs are in what column 
+    #summary(wind_data$AWND, frequency = 12, start())
+
+#how to identify if they removed a row data point just bc there was NA in it 
+#if it mises in july or auguest and not until dec you know there are missing values 
+tail(ts_wind_data) #when is last observation andyoull know row missing 
+ts_wind_data
+```
 
 
 

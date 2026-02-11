@@ -38,7 +38,7 @@ Let's continue working with our inflow data for reservoirs in Brazil.
 ```{r}
 #This R cde chunk was copied from M4
 #Importing time series data from text file#
-raw_inflow_data <- read.table(file="./Data/inflowtimeseries.txt",header=FALSE,skip=0)
+raw_inflow_data <- read.table(file="/home/guest/TSA_Sp26/Data/inflowtimeseries.txt",header=FALSE,skip=0)
 
 colnames(raw_inflow_data)=c("Month","Year", "HP1", "HP2","HP3","HP4", "HP5",
                             "HP6","HP7", "HP8","HP9","HP10", "HP11","HP12", 
@@ -89,6 +89,8 @@ for(i in 1:nhydro){
 }
 
 ```
+> can see the boxplots come from a lognormal distribution???
+
 
 Note from the plots that some reservoirs have many points outside the box. But it's hard to tell if those are outliers or not because we are looking at the time series with all its components. The idea is to first remove any seasonality and trend in the data, and then find outliers in the remainder series.
 
@@ -100,6 +102,10 @@ The stats package has a function called decompose(). This function only take tim
 The random component is the time series without seasonal and trend component. Let's try to identify outliers by looking at the random component only.
 
 ```{r}
+
+#detrend deseason series before grubs test
+
+
 #Using R decompose function
 iHP=1
 decompose_inflow_data <- decompose(ts_inflow_data[,iHP],"additive")
@@ -118,8 +124,12 @@ mean_inflow <- mean(na.exclude(inflow_random))  #exclude NA or missing observati
 sd_inflow <- sd(na.exclude(inflow_random))
 
 cat(mean_inflow,sd_inflow)
+# mean = NA NA-4.839207 764.0217 ----> 
 
 ```
+
+decompose - seasonaal component 
+detrend linear model - subtracting from data 
 
 ## Missing observations
 
@@ -130,7 +140,7 @@ The decompose function introduced NAs in the beginning and end of the data set. 
 df_inflow_random <- data.frame(date=my_date,month=as.factor(month(my_date)),inflow=as.numeric(inflow_random))
 
 #How many NAs we have, you can get it from summary or using is.na()
-sum(is.na(df_inflow_random$inflow))
+sum(is.na(df_inflow_random$inflow)). #ways to check NAs in specific column
 
 #We have NAs in the beginning and end of data, just remove them
 head(df_inflow_random,10)
@@ -162,6 +172,8 @@ ggplot(df_inflow_random, aes(x=date, y=inflow)) +
 ggplot(df_inflow_random, aes(y=inflow)) +
             geom_boxplot() 
 ```
+> boxplot 1 - what we are seeing for some of the inflow series is that the wet season high values persist on hihg months when it should return to normal ... 
+
 
 Since we removed the seasonal and trend component, the mean of the random series should be close to zero. Note that from the line plot with the red lines we see that we do have some outliers. The outliers could be due to error collecting the data or an extreme event. Either way, we may want to remove/replace them before fitting a model to our data set to avoid the effect of outliers on our model coefficients. 
 
@@ -205,6 +217,7 @@ print(chi_test)
 
 #If you need to remove outlier use rm.outlier()
 df_inflow_random$inflow <- rm.outlier(df_inflow_random$inflow,fill=TRUE) #using fill equal true the value will be replaced by mean or median 
+      # = true means you want to replace it with the mean of the series ...
 #Since we removed seasonality replacing with overall mean instead of local mean is acceptable
 
 #Plot series again and look for more outliers
@@ -213,7 +226,13 @@ ggplot(df_inflow_random, aes(x=date, y=inflow)) +
             geom_abline(slope=0,intercept=3*sd_inflow,color="red") +
             geom_abline(slope=0,intercept=-3*sd_inflow,color="red")
 
+
+#.... asnwer
+#both tests confirm highest observation is an outlier - decide you want to remove that? next step is rm.outlier()
+#find outlier, then do tests to confirm, then remove it and generate plot and over and over again - need a loop to do it because when you submit this itll run code chunk just once... this is how tsclean function was created (basically a loop that continues going through all the values)
+
 ```
+
 
 Note we still seem to have some outliers. You can repeat the process until the next extreme value is not an outlier or write a loop as below.
 
