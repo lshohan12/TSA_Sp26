@@ -218,22 +218,18 @@ print(adf.test(ts_energydata,alternative = "stationary"))
 Aggregate the original "Total Renewable Energy Production" series by year. You can use the same procedure we used in class. Store series in a matrix where rows represent months and columns represent years. And then take the columns mean using function colMeans(). Recall the goal is the remove the seasonal variation from the series to check for trend. Convert the accumulates yearly series into a time series object and plot the series using autoplot().
 
 ```{r}
-#2025 is not a complete year so i decided to trim it out to do yearly aggregation, 
-#this will produce similar results if i had also kept those few months
 
-ts_energydata_trimmed <- window(ts_energydata, end=c(2024, 12))
 
-#Group data in yearly steps instances
-energy_data_matrix <- matrix(ts_energydata_trimmed,byrow=FALSE,nrow=12)
+energy_data_matrix <- matrix(ts_energydata,byrow=FALSE,nrow=12)
 energy_data_yearly <- colMeans(energy_data_matrix)
 
+start_year <- start(ts_energydata)[1]
 
-energy_data_new_yearly <- ts(energy_data_yearly, start = 1973, frequency = 1)
+energy_data_new_yearly <- ts(energy_data_yearly, start = start_year, frequency = 1)
 
 autoplot(energy_data_new_yearly) +
             geom_line(color="blue") +
             geom_smooth(color="red",method="lm") 
-
 ```
 
 ### Q7
@@ -246,6 +242,19 @@ SMKtest_yearly <- SeasonalMannKendall(energy_data_new_yearly)
 print("Results for Seasonal Mann Kendall Yearly /n")
 print(summary(SMKtest_yearly))
 
+#------------- spearman ----------
+
+#making a vector with same amount as energy data yearly for spearman since it takes two vectors of same size
+myyear <- 1:length(energy_data_new_yearly)
+
+#Deterministic trend with Spearman Correlation Test
+print("Results from Spearman Correlation")
+sp_rho1=cor(energy_data_yearly,myyear,method="spearman")
+print(sp_rho1)
+
+#with cor.test you can get test statistics
+sp_rho=cor.test(energy_data_yearly,myyear,method="spearman")
+print(sp_rho)
 
 
 # ------------ ADF --------------
@@ -256,5 +265,6 @@ print(adf.test(energy_data_new_yearly,alternative = "stationary"))
 ```
 
 > Answer: With the SMK test, the large tau of 0.817 showcases a strong increasing trend and the very small pvalue of <2.22e-16 tells us to reject the null that says there is no trend. This is exactly the same as the results from Q5 monthly results. Thus, there is strong evidence there is a positive monotonic trend in the series. 
-The ADF test of dickey-fuller of -0.853 and pvalue of 0.9515 we fail to reject the null hypothesis and thus this series having a unit root we can conclude the yearly series is non stationary and has a stochastic trend which is what we determined from Q5. 
+> The spearman test gave a very small pvalue and a rho of 0.9234 indicates a very strong positive monotonic relationship and we reject the null hypothesis there isnt monotonic relationship.
+>The ADF test of dickey-fuller of -1.6789 and pvalue of 0.7037 we fail to reject the null hypothesis and thus this series having a unit root we can conclude the yearly series is non stationary and has a stochastic trend which is what we determined from Q5. 
 
