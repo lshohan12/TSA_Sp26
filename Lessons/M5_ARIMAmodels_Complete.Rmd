@@ -336,6 +336,8 @@ If you don't differenciate the series, i.e., if you input the non-stationarity s
 
 ```{r}
 
+#forcing arima model into nonstationary TS
+  #the error of non stationary AR part from CSS
 #Model_101 <- Arima(deseasonal_residential_price,order=c(1,0,1))
 #print(Model_101)
 #compare_aic <- data.frame(compare_aic,Model_101$aic)
@@ -343,6 +345,8 @@ If you don't differenciate the series, i.e., if you input the non-stationarity s
 Model_101_diff=Arima(deseasonal_residential_price_diff,order=c(1,0,1))
 print(Model_101_diff)
 
+#non comparable AICs  - residual series 101 and 111 is that they are different 
+#should only compare models when feeding same TS to them 
 compare_aic <- data.frame(compare_aic,Model_101_diff$aic)
 
 print(compare_aic)
@@ -356,6 +360,9 @@ One way of checking goodness of fit is by plotting observed versus fitted value 
 
 ```{r}
 
+# when you move from arima 111 to 211 -> they are very similar bc coefficients will compensate each other ... may be one or two observations where one outperforms but hard to visually get that nuance from looking at plot 
+  # compare arima with different forecasting model 
+  # doesnt tell us anything on forecasting performance / accuracy by just looking at intial analysis 
 
 Plot1 <-
 autoplot(deseasonal_residential_price,series="Observed")+
@@ -378,6 +385,9 @@ cowplot::plot_grid(Plot1,Plot2,Plot3,Plot4,nrow=2)
 
 ```
 
-Note that this is still non-seasonal data. If you want to compare to the original series with seasonality, you need to add seasonal component back to the ARIMA fit.
+Note that this is still non-seasonal data. If you want to compare to the original series with seasonality, you need to add seasonal component back to the ARIMA fit. - add it back to both observed and ARIMA estimates ... 
+
+Didnt remove trend with linear regression but were able to capture historic trend with arima feeding 
+
 
 
