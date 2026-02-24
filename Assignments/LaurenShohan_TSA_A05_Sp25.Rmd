@@ -152,8 +152,16 @@ wind_ts <- ts(energy_data1$`Wind Energy Consumption`,
                start=c(1984,1),
                frequency = 12)
 
+#additive model - if i add trend seasonal and remainder, i will get my og data
 solar_decomp_add <- decompose(solar_ts, type = 'additive')
+  #residuals dont look random at all, there is some seasonality and even more so at end
+  #forcing smooth seasonal component throughout timeframe of data, but initial years there isnt that much variation - forcing a seasonality in beginning in remainder series that doesnt exist.....
+  #the additive not a good rep of ts and that seasonal component is evolving with time and not a sole component - means seaonality is a function of the leg of the series, thus a multi may be better fit
+  #can see trend is most relative component of the ts - plot decomp wtih auto plot - trend making up most of og 
+
 wind_decomp_add  <- decompose(wind_ts,  type = 'additive')
+  #similar issue with seasonality being small component of the data and seasonality is the largest comp 
+  
 
 plot(solar_decomp_add)
 plot(wind_decomp_add)
@@ -175,6 +183,15 @@ plot(wind_decomp_mult)
 
 ```
 >Answer: The random component changed drastically. Once consumption begain for both series the random component relatively smoothed out and became steady with small oscillations. Solar looks much smoother than wind, but both show very small movement and constant steady random component, suggesting the multiplicative is a good fit. 
+
+class notes - 
+trend comp same but seasonal comp changed too and not multi with remainder will be 0-1 ??
+solar - some sort of level shift in series - the spikes of remainder - level shift of solar geneartion 
+
+wind - see similarity of disturbed in the initial remainder series .. 
+
+big improvement!!!
+
 
 ### Q6
 
@@ -207,7 +224,9 @@ plot(wind14_decomp_add)
 
 ```
 
-> Answer: It looks better than the previous full data series, but is still not fully random, with solar having a spike at the end in 2025 and the smaller oscillating period between 2020 and 2022. There is still structure to this and not completley random. Wind however looks more random than solar with residuals osciallating around zero with a repeating pattern and no intense spikes.  
+> Answer: It looks better than the previous full data series, but is still not fully random, with solar having a spike at the end in 2025 and the smaller oscillating period between 2020 and 2022. There is still structure to this and not completley random. Wind however looks more random than solar with residuals osciallating around zero with a repeating pattern and no intense spikes. 
+
+wind - improved and seasonal comp not as bad?? - shoudlve done multiplicative as well? - weird 
 
 ## Identify and Remove outliers
 
@@ -232,6 +251,10 @@ autoplot(wind_ts, series = 'Originial') +
 
 >Answer: Yes it removed outliers from the series, you can see it smoothed out the trend for both time series, you can harshly see it removed a lot of varying point after 2010 for Wind to make it a smoother line, as for solar it began a little later around 2015 where the dips and curves began to go further apart. 
 
+solar - really bad and removed seasonality of later years which are most relevant in the anaylsis... big mistake to dot this 
+wind - completely messed up seasonality of later years 
+
+
 ### Q9
 
 Redo number Q8 but now with the time series you created on Q7, i.e., the series starting in 2014. Using what `autoplot()` again what happened now? Did the function removed any outliers from the series?
@@ -255,3 +278,7 @@ autoplot(wind14_ts, series = 'Originial') +
 ```
 
 > Answer: This cleaned data set looks very different, for solar it removed a single outlier dip in 2025 while in wind nothing was removed. So, yes it removed one single outlier from solar while it removed nothing from wind.
+
+cleaned it oddly for solar and for wind it didnt do anything 
+use tsclean before working on data you can get alot of observations flagged as outliers that arent outliers 
+
