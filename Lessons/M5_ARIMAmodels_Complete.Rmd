@@ -385,7 +385,7 @@ cowplot::plot_grid(Plot1,Plot2,Plot3,Plot4,nrow=2)
 
 ```
 
-Note that this is still non-seasonal data. If you want to compare to the original series with seasonality, you need to add seasonal component back to the ARIMA fit. - add it back to both observed and ARIMA estimates ... 
+Note that this is still non-seasonal data If you want to compare to the original series with seasonality, you need to add seasonal component back to the ARIMA fit. - add it back to both observed and ARIMA estimates ... 
 
 Didnt remove trend with linear regression but were able to capture historic trend with arima feeding 
 

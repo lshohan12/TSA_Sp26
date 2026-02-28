@@ -119,8 +119,8 @@ Remember from previous scripts that the electricity price series has a stochasti
 deseasonal_residential_price <- seasadj(decompose_residential_price)  
 
 # Find out how many time we need to difference
-n_diff <- ndiffs(deseasonal_residential_price)
-cat("Number of differencing needed: ",n_diff)
+n_diff <- ndiffs(deseasonal_residential_price) #ndiff function - checked for stochastic trend 
+cat("Number of differencing needed: ",n_diff) #can see slow decay in acf around unit root 
 
 #Lets difference the series once at lag 1 to remove the trend.
 deseasonal_residential_price_diff <- diff(deseasonal_residential_price,differences=1,lag=1)
@@ -138,9 +138,9 @@ plot_grid(
   autoplot(Acf(ts_electricity_price[,"Residential"], lag = 40, plot=FALSE), 
                 main = "Orginal Residential Electricity Price"),
   autoplot(Acf(deseasonal_residential_price, lag = 40, plot=FALSE),  
-                  main = "Deseason Residential Electricity Price"),
+                  main = "Deseason Residential Electricity Price"), #clearly autoregressive process
   autoplot(Acf(deseasonal_residential_price_diff, lag = 40, plot=FALSE),  
-                  main = "Diff/Deseason Residential Electricity Price"),
+                  main = "Diff/Deseason Residential Electricity Price"), #lags are negative and characeristics of moving average models - can convert autoregress into MA process
   nrow=1
 )
 
@@ -176,13 +176,13 @@ plot_grid(
   autoplot(Acf(ts_electricity_price[,"Residential"],lag.max=60,plot=FALSE),
            main="Residential",
            ylim=c(-1,1)),
-  autoplot(Acf(residential_price_seas_diff,lag.max=60,plot=FALSE),
+  autoplot(Acf(residential_price_seas_diff,lag.max=60,plot=FALSE), #eliminated seasonal comp of the data and now i see no seasonal comps at seasonal lags - but non seasonal trend part you are still seeing autoregres comps and still has it up to 12 observations - now we must difference seires again (last graph)
            main="Seasonal-Differenced Residential",
            ylim=c(-1,1)),
-  autoplot(Acf(residential_price_trend_diff,lag.max=60,plot=FALSE),
-           main="Trend-Differenced Residential",
-           ylim=c(-1,1)),
-  autoplot(Acf(residential_price_both_diff,lag.max=60,plot=FALSE),
+  autoplot(Acf(residential_price_trend_diff,lag.max=60,plot=FALSE),  #telling me my seasonal comp is autoregressive 
+           main="Trend-Differenced Residential", 
+           ylim=c(-1,1)),  
+  autoplot(Acf(residential_price_both_diff,lag.max=60,plot=FALSE), #got rid of seasonal behavior and autoregres. behavior but soemthing there at 12  
            main="Twice-Differenced Residential",
            ylim=c(-1,1)),
   nrow=2,ncol=2
@@ -190,6 +190,7 @@ plot_grid(
 
 
 #Comparing PACFs
+#difference at seasonal levels that didnt have signif at residental, now does at seasonal differenced - if you see multiple spikes in pacf it is a seasonal moving average process .... now i did seasonal differencing 
 plot_grid(
   autoplot(Pacf(ts_electricity_price[,"Residential"],lag.max=60,plot=FALSE),
            main="Residential",
@@ -200,7 +201,7 @@ plot_grid(
   autoplot(Pacf(residential_price_trend_diff,lag.max=60,plot=FALSE),
            main="Trend-Differenced Residential",
            ylim=c(-1,1)),
-  autoplot(Pacf(residential_price_both_diff,lag.max=60,plot=FALSE),
+  autoplot(Pacf(residential_price_both_diff,lag.max=60,plot=FALSE), #saw og acf was slow decay (aka an autoregress seasonal comp) - we autodifferenced but still get some seasonal lags variability.... thus its characteristics of a moving average model ... even after differencing at seasonal there is some relationship between the shocks 
            main="Twice-Differenced Residential",
            ylim=c(-1,1)),
   nrow=2,ncol=2
@@ -223,15 +224,41 @@ Look at the twice differenced series to identify model order.
 ## Manually fitting seasonal ARIMA to original series
 
 ```{r}
+Model_111_011 <- Arima(ts_electricity_price[,'Residential'],
+                       order=c(1,1,1),
+                       seasonal=c(0,1,1),
+                       include.drift = TRUE
+                       )
+
+print(Model_111_011)
+checkresiduals(Model_111_011)
+compare_aic <- data.frame(Model_111_011$aic)
+  #better than alot of acfs, no white noise really 
 
 
+
+Model_011_011 <- Arima(ts_electricity_price[,'Residential'],
+                       order=c(0,1,1),
+                       seasonal=c(0,1,1),
+                       include.drift = TRUE
+                       )
+
+print(Model_011_011)
+checkresiduals(Model_011_011)
+compare_aic <- data.frame(Model_011_011$aic)
+#other model fit is better than this one bc more white noise???
 
 ```
 
 ## Automatically fitting seasonal ARIMA to original series
 
 ```{r}
+# can allow arima to find best model 
+# best model according to arima is the 012 011 => so none of the models were tried but close to the first one ...
+# this model gave the best AIC 
 
+#ARIMA model does....
+#looks for lowest aic, for residuals to be white noise series, and that parameters are consistent and not = -1,+1 or close to that
 
 
 
@@ -243,6 +270,7 @@ Look at the twice differenced series to identify model order.
 Recall from M6 that the best fit for the non-seasonal time series is a ARIMA(1,1,2) with drift.
 
 ```{r}
+
 
 
 
